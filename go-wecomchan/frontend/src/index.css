@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  font-family: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", "Segoe UI", sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  min-height: 100%;
+}
+
+body {
+  position: relative;
+  margin: 0;
+  min-height: 100vh;
+  color: #142027;
+  background:
+    radial-gradient(circle at top left, rgba(245, 158, 11, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(16, 185, 129, 0.12), transparent 24%),
+    linear-gradient(180deg, #f8f4ee 0%, #f3ede5 42%, #eef2ef 100%);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08)),
+    repeating-linear-gradient(
+      0deg,
+      rgba(148, 163, 184, 0.06) 0,
+      rgba(148, 163, 184, 0.06) 1px,
+      transparent 1px,
+      transparent 28px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(148, 163, 184, 0.05) 0,
+      rgba(148, 163, 184, 0.05) 1px,
+      transparent 1px,
+      transparent 28px
+    );
+  opacity: 0.32;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(180, 83, 9, 0.18);
+}
+
+@layer components {
+  .card-panel {
+    @apply rounded-[20px] border border-[#e7ddd0] bg-white p-6 shadow-panel backdrop-blur md:p-7;
+  }
+
+  .input-shell {
+    @apply w-full rounded-xl border border-[#d9d0c4] bg-[#fcfaf6] px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-700 focus:ring-4 focus:ring-amber-100;
+  }
+
+  .primary-button {
+    @apply inline-flex items-center justify-center rounded-xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400;
+  }
+
+  .secondary-button {
+    @apply inline-flex items-center justify-center rounded-xl border border-[#d7d0c4] bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:border-slate-400 hover:bg-white;
+  }
+
+  .metric-tile {
+    @apply rounded-2xl border border-[#e8dfd2] bg-[#fcfbf8] px-4 py-4 text-sm text-slate-700;
+  }
+
+  .subtle-panel {
+    @apply rounded-[18px] border border-[#e8dfd2] bg-[#fcfbf8];
+  }
+
+  .nav-button {
+    @apply w-full rounded-xl border border-transparent bg-transparent px-3 py-3 text-left transition hover:border-[#e5dccf] hover:bg-[#fcfbf8];
+  }
+
+  .nav-button-active {
+    @apply border-[#d7ba95] bg-[#fff6eb] shadow-sm;
+  }
+
+  .section-chip {
+    @apply inline-flex items-center rounded-full border border-[#ead8bf] bg-[#fff7eb] px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-clay shadow-sm;
+  }
+}

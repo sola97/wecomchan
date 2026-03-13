@@ -1,0 +1,6 @@
+wecomchan
+frontend/node_modules
+frontend/dist
+bot-config.json
+data/
+*.bak

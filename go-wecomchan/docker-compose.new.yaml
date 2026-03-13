@@ -1,0 +1,65 @@
+services:
+  wecomchan:
+    restart: always
+    image: sola97/wecomchan-next:latest
+    container_name: wecomchan
+    environment:
+      - WEB_PASSWORD=change_me
+      - BOT_CONFIG_PATH=/root/data/bot-config.json
+      - DEFAULT_ROUTE_SUFFIX=wecomchan
+    volumes:
+      - ./bot-config.json:/root/data/bot-config.json
+    networks:
+      - go-wecomchan
+    depends_on:
+      - redis
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "1"
+
+  redis:
+    restart: always
+    image: bitnami/redis
+    container_name: wecomchan-redis
+    environment:
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+      - REDIS_PASSWORD=change_me
+    networks:
+      - go-wecomchan
+    volumes:
+      - redis_data:/bitnami/redis/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "1"
+
+  nginx:
+    image: sola97/nginx:latest
+    container_name: wecomchan-nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./conf.d:/etc/nginx/conf.d
+      - /cert:/cert
+    restart: always
+    ports:
+      - 51080:80
+      - 51443:443
+    networks:
+      - go-wecomchan
+    depends_on:
+      - wecomchan
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "30m"
+        max-file: "1"
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  go-wecomchan:

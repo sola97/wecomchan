@@ -1,0 +1,31 @@
+{
+  "redis": {
+    "enabled": true,
+    "addr": "redis:6379",
+    "password": "change_me"
+  },
+  "configs": [
+    {
+      "route_suffix": "wecomchan",
+      "display_name": "默认机器人",
+      "sendkey": "change_me",
+      "wecom_cid": "wwxxxxxxxxxxxxxxxx",
+      "wecom_secret": "replace_with_wecom_secret",
+      "wecom_aid": "1000001",
+      "wecom_touid": "@all",
+      "callback_token": "",
+      "callback_aes_key": ""
+    },
+    {
+      "route_suffix": "another-bot",
+      "display_name": "第二个机器人",
+      "sendkey": "change_me_too",
+      "wecom_cid": "wwxxxxxxxxxxxxxxxx",
+      "wecom_secret": "replace_with_another_secret",
+      "wecom_aid": "1000002",
+      "wecom_touid": "@all",
+      "callback_token": "",
+      "callback_aes_key": ""
+    }
+  ]
+}

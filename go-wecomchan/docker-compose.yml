@@ -2,9 +2,12 @@ version: '3'
 
 services:
   go-wecomchan:
-    image: sola97/wecomchan:latest
+    build:
+      context: .
+    image: go-wecomchan:local
     environment:
       - SENDKEY=发送时用来验证的key
+      - WEB_PASSWORD=管理台登录密码
       - WECOM_CID=企业微信公司ID
       - WECOM_SECRET=企业微信应用Secret
       - WECOM_AID=企业微信应用ID

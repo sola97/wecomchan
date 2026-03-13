@@ -1,121 +1,229 @@
-# go-wecomchan 
+# go-wecomchan
 
-## what's new
+一个可通过企业微信应用发送消息的轻量服务，支持：
 
-添加 Dockerfile.architecture 使用docker buildx支持构建多架构镜像。
+- `GET /wecomchan` 发送文本
+- `POST /wecomchan` 发送文本、Markdown、图片，以及图文双发
+- `GET /<route>/callback` 企业微信回调地址校验
+- `GET /admin` 登录后进入 Web 管理界面，内置接口模板、执行按钮和结果回显
 
-关于docker buildx build 使用方式参考官方文档:
+## 新增能力
 
-[https://docs.docker.com/engine/reference/commandline/buildx_build/](https://docs.docker.com/engine/reference/commandline/buildx_build/)
+- 增加了 React + TailwindCSS 编写的 Web 管理界面
+- 管理界面通过环境变量 `WEB_PASSWORD` 控制登录
+- 管理界面提供机器人配置、Redis 配置、接口测试、7 天发送日志四个页面
+- 管理界面提供 GET、POST、图片、图文双发四类调试工具
+- 管理界面提供企业微信消息校验接口的地址和参数说明
+- 大于 2MB 的测试图片会在前端自动尝试 JPEG 压缩
+- 机器人和 Redis 配置支持保存到本地 JSON 文件
+- Docker 多阶段构建会自动编译前端并复制 `frontend/dist`
 
-## 配置说明
+## 环境变量
 
-直接使用和构建二进制文件使用需要golang环境，并且网络可以安装依赖。  
-docker构建镜像使用，需要安装docker，不依赖golang以及网络。  
+| 名称 | 描述 | 默认值 |
+| --- | --- | --- |
+| `SENDKEY` | 公开发送接口的校验密钥 | `set_a_sendkey` |
+| `WEB_PASSWORD` | 管理界面登录密码 | 空 |
+| `LISTEN_ADDR` | 服务监听地址 | `:8080` |
+| `FRONTEND_DIST_DIR` | 前端静态文件目录 | `./frontend/dist` |
+| `BOT_CONFIG_PATH` | 多机器人 JSON 配置文件路径 | `./data/bot-config.json` |
+| `MESSAGE_LOG_PATH` | 发送日志 JSONL 文件路径 | `./data/message-logs.jsonl` |
+| `WECOM_CID` | 企业微信公司 ID | `企业微信公司ID` |
+| `WECOM_SECRET` | 企业微信应用 Secret | `企业微信应用Secret` |
+| `WECOM_AID` | 企业微信应用 ID | `企业微信应用ID` |
+| `WECOM_TOUID` | 消息接收对象 | `@all` |
+| `REDIS_STAT` | 是否启用 Redis 缓存 token，`ON`/`OFF` | `OFF` |
+| `REDIS_ADDR` | Redis 地址 | `localhost:6379` |
+| `REDIS_PASSWORD` | Redis 密码 | 空 |
+| `WECOM_TOKEN` | 企业微信回调 Token | `企业微信回调Token` |
+| `WECOM_AES_KEY` | 企业微信回调 AesKey | `企业微信回调AesKey` |
 
-## 修改默认值
+`WEB_PASSWORD` 未配置时，`/admin` 页面仍可访问，但不会允许登录。
 
-修改的sendkey，企业微信公司ID 等默认值为你的企业中的相关信息，如不设置运行时和打包后都可通过环境变量传入。
+## 配置文件
 
-```golang
-var Sendkey = GetEnvDefault("SENDKEY", "set_a_sendkey")
-var WecomCid = GetEnvDefault("WECOM_CID", "企业微信公司ID")
-var WecomSecret = GetEnvDefault("WECOM_SECRET", "企业微信应用Secret")
-var WecomAid = GetEnvDefault("WECOM_AID", "企业微信应用ID")
-var WecomToUid = GetEnvDefault("WECOM_TOUID", "@all")
-var RedisStat = GetEnvDefault("REDIS_STAT", "OFF")
-var RedisAddr = GetEnvDefault("REDIS_ADDR", "localhost:6379")
-var RedisPassword = GetEnvDefault("REDIS_PASSWORD", "")
-```
+仓库默认只提交示例文件，不提交真实密钥：
 
-## 直接使用
+- `bot-config.example.json`：多机器人配置模板
+- `docker-compose.new.yaml`：`wecomchan-next` 的容器部署模板
 
-如果没有添加默认值，需要先引入环境变量，以SENDKEY为例：
-
-`export SENDKEY=set_a_sendkey`
-依次引入环境变量后，执行
-`go run .`
-
-## build命令构建二进制文件使用
-
-1. 构建命令
-`go build`
-
-2. 启动
-`./wecomchan`
-
-## 构建docker镜像使用（推荐，不依赖golang，不依赖网络）
-
-新增打包好的镜像可以直接使用
-
-- 推送文本or图片:`docker pull aozakiaoko/go-wecomchan`  
-Docker Hub 地址为:[https://hub.docker.com/r/aozakiaoko/go-wecomchan](https://hub.docker.com/r/aozakiaoko/go-wecomchan)  
-
-已经更新latest镜像为 @fcbhank 的最新代码，并支持arm64设备。也可通过aozakiaoko/go-wecomchan:v2 获取最新镜像。
-
-- v2_推送文本or图片:`docker pull fcbhank/go-wecomchan`
-Docker Hub 地址为:[https://hub.docker.com/r/fcbhank/go-wecomchan](https://hub.docker.com/r/fcbhank/go-wecomchan)
-
-1. 构建镜像
-`docker build -t go-wecomchan .`
-
-2. 修改默认值后启动镜像
-`docker run -dit -p 8080:8080 go-wecomchan`
-
-3. 通过环境变量启动镜像并启用redis
+首次使用建议：
 
 ```bash
-docker run -dit -e SENDKEY=set_a_sendkey \
--e WECOM_CID=企业微信公司ID \
--e WECOM_SECRET=企业微信应用Secret \
--e WECOM_AID=企业微信应用ID \
--e WECOM_TOUID="@all" \
--e REDIS_STAT=ON \
--e REDIS_ADDR="localhost:6379" \
--e REDIS_PASSWORD="" \
-# aozakiaoko/go-wecomchan 已经更新镜像为 @fcbhank 的最新代码，并支持arm64设备。
-# v2 fcbhank/go-wecomchan
--p 8080:8080 go-wecomchan
+cp bot-config.example.json bot-config.json
 ```
 
-如不使用redis不要传入最后三个关于redis的环境变量(REDIS_STAT|REDIS_ADDR|REDIS_PASSWORD)
+然后按你的真实企业微信参数修改 `bot-config.json`，再挂载到容器内。
 
-4. 环境变量说明
+## 本地启动
 
-|名称|描述|
-|---|---|
-|SENDKEY|发送时用来验证的key|
-|WECOM_CID|企业微信公司ID|
-|WECOM_SECRET|企业微信应用Secret|
-|WECOM_AID|企业微信应用ID|
-|WECOM_TOUID|需要发送给的人，详见[企业微信官方文档](https://work.weixin.qq.com/api/doc/90000/90135/90236#%E6%96%87%E6%9C%AC%E6%B6%88%E6%81%AF)|
-|REDIS_STAT|是否启用redis换缓存token,ON-启用 OFF或空-不启用|
-|REDIS_ADDR|redis服务器地址，如不启用redis缓存可不设置|
-|REDIS_PASSWORD|redis的连接密码，如不启用redis缓存可不设置|
-
-## 使用docker-compose 部署
-
-修改docker-compose.yml 文件内上述的环境变量，之后执行
-
-`docker-compose up -d`
-
-## 调用方式
-- v1_推送文本
-访问 `http://localhost:8080/wecomchan?sendkey=你配置的sendkey&&msg=需要发送的消息&&msg_type=text`
-
-- v2_推送文本or图片
+### 1. 构建前端
 
 ```bash
-# 推送文本消息
-curl --location --request GET 'http://localhost:8080/wecomchan?sendkey={你的sendkey}&msg={你的文本消息}&msg_type=text'
-
-# 推送图片消息
-curl --location --request POST 'http://localhost:8080/wecomchan?sendkey={你的sendkey}&msg_type=image' \
---form 'media=@"test.jpg"'
+cd frontend
+npm install
+npm run build
 ```
 
-## 后续预计添加
+### 2. 启动后端
 
-* [x] Dockerfile 打包镜像(不依赖网络环境)
-* [x] 通过环境变量传递企业微信id，secret等，镜像一次构建多次使用
-* [x] docker-compose redis + go-wecomchan 一键部署
+```bash
+export SENDKEY=set_a_sendkey
+export WEB_PASSWORD=change_me
+export WECOM_CID=企业微信公司ID
+export WECOM_SECRET=企业微信应用Secret
+export WECOM_AID=企业微信应用ID
+
+go run .
+```
+
+启动后可访问：
+
+- 管理界面：`http://localhost:8080/admin`
+- 服务健康页：`http://localhost:8080/`
+
+## Docker 构建
+
+### 构建镜像
+
+```bash
+docker build -t go-wecomchan .
+```
+
+### 启动容器
+
+```bash
+docker run -dit \
+  -p 8080:8080 \
+  -e SENDKEY=set_a_sendkey \
+  -e WEB_PASSWORD=change_me \
+  -e WECOM_CID=企业微信公司ID \
+  -e WECOM_SECRET=企业微信应用Secret \
+  -e WECOM_AID=企业微信应用ID \
+  go-wecomchan
+```
+
+## docker-compose
+
+项目内有两个 compose 模板：
+
+- `docker-compose.yml`：本地源码构建示例
+- `docker-compose.new.yaml`：`sola97/wecomchan-next:latest` 镜像部署示例
+
+`docker-compose.new.yaml` 默认挂载本地配置文件：
+
+```yaml
+volumes:
+  - ./bot-config.json:/root/data/bot-config.json
+```
+
+使用前请先复制并编辑：
+
+```bash
+cp bot-config.example.json bot-config.json
+```
+
+示例内容已经包含：
+
+- `WEB_PASSWORD`
+- `redis`
+- `BOT_CONFIG_PATH`
+- JSON 配置文件挂载
+
+执行：
+
+```bash
+docker compose -f docker-compose.new.yaml up -d
+```
+
+## 接口调用示例
+
+### 1. GET 发送文本
+
+```bash
+curl --location --request GET \
+  'http://localhost:8080/wecomchan?sendkey=set_a_sendkey&msg=hello&msg_type=text'
+```
+
+### 2. POST 发送文本 / Markdown
+
+```bash
+curl --location --request POST \
+  'http://localhost:8080/wecomchan' \
+  --header 'Content-Type: application/json' \
+  --data-raw '{
+    "sendkey": "set_a_sendkey",
+    "msg": "## hello from markdown",
+    "msg_type": "markdown"
+  }'
+```
+
+### 3. POST 发送图片
+
+```bash
+curl --location --request POST \
+  'http://localhost:8080/wecomchan?sendkey=set_a_sendkey&msg_type=image' \
+  --form 'media=@"./test.png"'
+```
+
+### 4. POST 图文双发
+
+```bash
+curl --location --request POST \
+  'http://localhost:8080/wecomchan' \
+  --header 'Content-Type: application/json' \
+  --data-raw '{
+    "sendkey": "set_a_sendkey",
+    "msg": "这是一条文字消息",
+    "msg_type": "text",
+    "image": "<BASE64_IMAGE_DATA>",
+    "filename": "demo.png"
+  }'
+```
+
+说明：
+
+- 图文双发直接复用原来的 `POST /wecomchan`
+- `image` 传图片的 base64 字符串
+- 为兼容旧调用，后端仍兼容 `image_base62` 和 `image_data` 别名
+- 后端会先发送一条 `text` 消息，再发送一条 `image` 消息
+- 图片大小仍受企业微信 2MB 限制
+
+## Web 管理界面
+
+访问：
+
+```text
+http://localhost:8080/admin
+```
+
+登录后可以直接使用：
+
+- 机器人配置列表与右侧编辑表单联动
+- Redis 全局配置页面
+- GET 文本发送模板
+- POST 文本 / Markdown 模板
+- 图片发送模板
+- 图文双发模板
+- 最近 7 天发送日志
+- 企业微信回调校验接口说明
+
+## 回调接口说明
+
+### GET `/<route>/callback`
+
+用于企业微信回调 URL 校验，查询参数：
+
+- `msg_signature`
+- `timestamp`
+- `nonce`
+- `echostr`
+
+### POST `/<route>/callback`
+
+当前项目保留该入口，便于后续扩展企业微信消息回调处理。常见参数：
+
+- `msg_signature`
+- `timestamp`
+- `nonce`
+- 请求体为企业微信 XML 加密消息
