@@ -1,0 +1,8 @@
+{
+  "redis": {
+    "enabled": true,
+    "addr": "redis:6379",
+    "password": "change_me"
+  },
+  "configs": []
+}

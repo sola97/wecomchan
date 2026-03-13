@@ -1,0 +1,20 @@
+{
+  "redis": {
+    "enabled": true,
+    "addr": "redis:6379",
+    "password": "change_me"
+  },
+  "configs": [
+    {
+      "route_suffix": "wecomchan",
+      "display_name": "默认机器人",
+      "sendkey": "change_me",
+      "wecom_cid": "wwxxxxxxxxxxxxxxxx",
+      "wecom_secret": "replace_with_wecom_secret",
+      "wecom_aid": "1000001",
+      "wecom_touid": "@all",
+      "callback_token": "demoToken7Kp3Qx9Mz2Ls",
+      "callback_aes_key": "a8Pq3Lm9Ks2Vx6Nc4Ht7Rb1Ye5Wu0Df3Jc8Mg2Qa9Zx"
+    }
+  ]
+}
