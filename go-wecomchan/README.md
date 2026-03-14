@@ -85,7 +85,7 @@ services:
         max-file: "1"
 
   nginx:
-    image: sola97/nginx:latest
+    image: nginx:alpine
     container_name: wecomchan-next-nginx
     restart: always
     depends_on:
