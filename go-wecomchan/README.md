@@ -6,47 +6,26 @@
 
 ## 1. 启动 `sola97/wecomchan-next + redis + nginx`
 
-先新建 `nginx.conf`：
+先执行：
+
+```bash
+mkdir -p conf.d
+```
+
+再新建 `conf.d/wecomchan.conf`：
 
 ```nginx
-user nginx;
-worker_processes auto;
+server {
+  listen 80;
+  server_name <修改成你的域名>;
 
-error_log /dev/stderr warn;
-pid /var/run/nginx.pid;
-
-events {
-  worker_connections 1024;
-}
-
-http {
-  include /etc/nginx/mime.types;
-  default_type application/octet-stream;
-
-  log_format main '$remote_addr - $remote_user [$time_local] "$request" '
-                  '$status $body_bytes_sent "$http_referer" '
-                  '"$http_user_agent" "$http_x_forwarded_for"';
-
-  access_log /dev/stdout main;
-
-  sendfile on;
-  tcp_nopush on;
-  tcp_nodelay on;
-  keepalive_timeout 65;
-  types_hash_max_size 4096;
-
-  server {
-    listen 80;
-    server_name <修改成你的域名>;
-
-    location / {
-      proxy_pass http://wecomchan:8080;
-      proxy_http_version 1.1;
-      proxy_set_header Host $host;
-      proxy_set_header X-Real-IP $remote_addr;
-      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-      proxy_set_header X-Forwarded-Proto $scheme;
-    }
+  location / {
+    proxy_pass http://wecomchan:8080;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
   }
 }
 ```
@@ -94,7 +73,7 @@ services:
       - "8080:80"
       - "8443:80"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./conf.d:/etc/nginx/conf.d:ro
     logging:
       driver: json-file
       options:
@@ -106,7 +85,7 @@ volumes:
 ```
 
 把上面 `<修改成你的密码>` 改掉。
-把 `nginx.conf` 里的域名改成你自己的。
+把 `conf.d/wecomchan.conf` 里的域名改成你自己的。
 
 `bot-configs.json` 不用手工创建。服务会先正常启动，第一次在后台保存配置时自动写入 `./data/bot-configs.json`。
 
@@ -148,10 +127,6 @@ docker compose up -d
 - `Token`
 - `EncodingAESKey`
 
-### 接收消息服务器配置
-
-<img src="docs/images/readme-admin-callback.png" alt="接收消息服务器配置" width="960" />
-
 ## 4. 回到网页填写，再回企业微信保存
 
 回到网页里的“接收消息服务器配置”区块：
@@ -164,6 +139,10 @@ docker compose up -d
 然后再回到企业微信后台，只填 `URL` 并保存。
 
 建议直接用最终域名访问管理界面，再去复制这组配置。
+
+### 接收消息服务器配置
+
+<img src="docs/images/readme-admin-callback.png" alt="接收消息服务器配置" width="960" />
 
 ## 5. 企业微信保存成功后，再设置可信 IP 和接口测试
 
