@@ -6,25 +6,104 @@
 
 ## 1. 启动 `sola97/wecomchan-next + redis + nginx`
 
-先准备配置文件：
+新建一个 `docker-compose.yml`，内容直接用下面这份：
 
-```bash
-cp bot-config.empty.example.json bot-config.json
-cp nginx.conf.example nginx.conf
-mkdir -p conf.d
-cp conf.d/wecomchan.conf.example conf.d/wecomchan.conf
+```yaml
+services:
+  wecomchan:
+    image: sola97/wecomchan-next:latest
+    container_name: wecomchan-next
+    restart: always
+    environment:
+      WEB_PASSWORD: "<修改成你的密码>"
+      BOT_CONFIG_PATH: /root/data/bot-config.json
+    volumes:
+      - ./data:/root/data
+    depends_on:
+      - redis
+    entrypoint:
+      - /bin/sh
+      - -c
+    command: |
+      mkdir -p /root/data
+      if [ ! -f /root/data/bot-config.json ]; then
+        cat >/root/data/bot-config.json <<EOF
+      {
+        "redis": {
+          "enabled": true,
+          "addr": "redis:6379",
+          "password": "<修改成你的密码>"
+        },
+        "configs": []
+      }
+      EOF
+      fi
+      exec ./wecomchan
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "1"
+
+  redis:
+    image: bitnami/redis:latest
+    container_name: wecomchan-next-redis
+    restart: always
+    environment:
+      REDIS_DISABLE_COMMANDS: FLUSHDB,FLUSHALL
+      REDIS_PASSWORD: "<修改成你的密码>"
+    volumes:
+      - redis_data:/bitnami/redis/data
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "1"
+
+  nginx:
+    image: sola97/nginx:latest
+    container_name: wecomchan-next-nginx
+    restart: always
+    depends_on:
+      - wecomchan
+    ports:
+      - "51080:80"
+    entrypoint:
+      - /bin/sh
+      - -c
+    command: |
+      cat >/etc/nginx/conf.d/default.conf <<EOF
+      server {
+          listen 80;
+          server_name _;
+
+          location / {
+              proxy_pass http://wecomchan:8080;
+              proxy_http_version 1.1;
+              proxy_set_header Host \$$host;
+              proxy_set_header X-Real-IP \$$remote_addr;
+              proxy_set_header X-Forwarded-For \$$proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto \$$scheme;
+          }
+      }
+      EOF
+      exec nginx -g 'daemon off;'
+    logging:
+      driver: json-file
+      options:
+        max-size: 30m
+        max-file: "1"
+
+volumes:
+  redis_data:
 ```
 
-然后只改这几个地方：
-
-- `docker-compose.new.yaml` 里的 `WEB_PASSWORD`
-- `docker-compose.new.yaml` 里的 `REDIS_PASSWORD`
-- `conf.d/wecomchan.conf` 里的 `server_name`
+把上面两个 `<修改成你的密码>` 都改掉。
 
 启动：
 
 ```bash
-docker compose -f docker-compose.new.yaml up -d
+docker compose up -d
 ```
 
 启动后访问：
@@ -49,41 +128,42 @@ docker compose -f docker-compose.new.yaml up -d
 
 <img src="docs/images/readme-admin-config.png" alt="单机器人配置页面" width="960" />
 
-## 3. 进入“接收消息服务器配置”，填好后保存
+## 3. 先去企业微信后台，打开“接收消息服务器配置”
 
-在机器人编辑页的“接收消息服务器配置”里：
+先进入企业微信应用后台的“接收消息服务器配置”页面。
 
-- `URL` 直接用页面展示出来的地址
-- 填入 `Token`
-- 填入 `EncodingAESKey`
-- 点击保存
+这一步先准备好：
 
-这里不要先记接口细节，直接以页面展示为准。
+- `Token`
+- `EncodingAESKey`
 
 ### 接收消息服务器配置
 
 <img src="docs/images/readme-admin-callback.png" alt="接收消息服务器配置" width="960" />
 
-## 4. 去企业微信后台设置
+## 4. 回到网页填写，再回企业微信保存
 
-在企业微信应用里完成两件事：
+回到网页里的“接收消息服务器配置”区块：
 
-1. 设置可信 IP
-2. 设置接收消息服务器配置
+- 把企业微信页面里的 `Token` 填进网页
+- 把企业微信页面里的 `EncodingAESKey` 填进网页
+- 点击保存
+- `URL` 直接用网页展示出来的地址
 
-把后台页面里看到的：
+然后再回到企业微信后台，把下面这 3 个值填进去并保存：
 
 - `URL`
 - `Token`
 - `EncodingAESKey`
 
-原样填到企业微信里即可。
-
 建议直接用最终域名访问管理界面，再去复制这组配置。
 
-## 5. 用“接口测试”页面自测
+## 5. 企业微信保存成功后，再设置可信 IP 和接口测试
 
-机器人保存完成后，直接进入“接口测试”页面发一条测试消息。
+企业微信里的“接收消息服务器配置”保存成功后：
+
+1. 设置可信 IP
+2. 回到网页里的“接口测试”页面发一条测试消息
 
 接口模板、参数说明、执行按钮、执行结果，网页端都已经有了，README 不再重复写。
 
@@ -91,17 +171,8 @@ docker compose -f docker-compose.new.yaml up -d
 
 <img src="docs/images/readme-admin-tools.png" alt="接口测试页面" width="960" />
 
-## 相关文件
-
-- `docker-compose.new.yaml`
-- `bot-config.empty.example.json`
-- `bot-config.single.example.json`
-- `bot-config.example.json`
-- `nginx.conf.example`
-- `conf.d/wecomchan.conf.example`
-
 ## 说明
 
-- 配置会保存到挂载的 `bot-config.json`
+- 配置会保存到 `./data/bot-config.json`
 - 如果只是第一次上线，优先走单机器人流程
 - 接口说明、回调地址、执行结果都以网页端为准
