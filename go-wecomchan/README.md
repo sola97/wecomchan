@@ -6,7 +6,52 @@
 
 ## 1. 启动 `sola97/wecomchan-next + redis + nginx`
 
-新建一个 `docker-compose.yml`，内容直接用下面这份：
+先新建 `nginx.conf`：
+
+```nginx
+user nginx;
+worker_processes auto;
+
+error_log /dev/stderr warn;
+pid /var/run/nginx.pid;
+
+events {
+  worker_connections 1024;
+}
+
+http {
+  include /etc/nginx/mime.types;
+  default_type application/octet-stream;
+
+  log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                  '$status $body_bytes_sent "$http_referer" '
+                  '"$http_user_agent" "$http_x_forwarded_for"';
+
+  access_log /dev/stdout main;
+
+  sendfile on;
+  tcp_nopush on;
+  tcp_nodelay on;
+  keepalive_timeout 65;
+  types_hash_max_size 4096;
+
+  server {
+    listen 80;
+    server_name <修改成你的域名>;
+
+    location / {
+      proxy_pass http://wecomchan:8080;
+      proxy_http_version 1.1;
+      proxy_set_header Host $host;
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+    }
+  }
+}
+```
+
+再新建 `docker-compose.yml`：
 
 ```yaml
 services:
@@ -16,29 +61,10 @@ services:
     restart: always
     environment:
       WEB_PASSWORD: "<修改成你的密码>"
-      BOT_CONFIG_PATH: /root/data/bot-config.json
     volumes:
       - ./data:/root/data
     depends_on:
       - redis
-    entrypoint:
-      - /bin/sh
-      - -c
-    command: |
-      mkdir -p /root/data
-      if [ ! -f /root/data/bot-config.json ]; then
-        cat >/root/data/bot-config.json <<EOF
-      {
-        "redis": {
-          "enabled": true,
-          "addr": "redis:6379",
-          "password": "<修改成你的密码>"
-        },
-        "configs": []
-      }
-      EOF
-      fi
-      exec ./wecomchan
     logging:
       driver: json-file
       options:
@@ -46,14 +72,12 @@ services:
         max-file: "1"
 
   redis:
-    image: bitnami/redis:latest
+    image: redis:7-alpine
     container_name: wecomchan-next-redis
     restart: always
-    environment:
-      REDIS_DISABLE_COMMANDS: FLUSHDB,FLUSHALL
-      REDIS_PASSWORD: "<修改成你的密码>"
+    command: ["redis-server", "--appendonly", "yes"]
     volumes:
-      - redis_data:/bitnami/redis/data
+      - redis_data:/data
     logging:
       driver: json-file
       options:
@@ -67,27 +91,10 @@ services:
     depends_on:
       - wecomchan
     ports:
-      - "51080:80"
-    entrypoint:
-      - /bin/sh
-      - -c
-    command: |
-      cat >/etc/nginx/conf.d/default.conf <<EOF
-      server {
-          listen 80;
-          server_name _;
-
-          location / {
-              proxy_pass http://wecomchan:8080;
-              proxy_http_version 1.1;
-              proxy_set_header Host \$$host;
-              proxy_set_header X-Real-IP \$$remote_addr;
-              proxy_set_header X-Forwarded-For \$$proxy_add_x_forwarded_for;
-              proxy_set_header X-Forwarded-Proto \$$scheme;
-          }
-      }
-      EOF
-      exec nginx -g 'daemon off;'
+      - "8080:80"
+      - "8443:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
     logging:
       driver: json-file
       options:
@@ -98,7 +105,10 @@ volumes:
   redis_data:
 ```
 
-把上面两个 `<修改成你的密码>` 都改掉。
+把上面 `<修改成你的密码>` 改掉。
+把 `nginx.conf` 里的域名改成你自己的。
+
+`bot-configs.json` 不用手工创建。服务会先正常启动，第一次在后台保存配置时自动写入 `./data/bot-configs.json`。
 
 启动：
 
@@ -108,7 +118,8 @@ docker compose up -d
 
 启动后访问：
 
-- `http://<服务器IP>:51080/admin/`
+- `http://<服务器IP>:8080/admin/`
+- `http://<你的域名>:8443/admin/`
 
 ### 登录页
 
@@ -150,11 +161,7 @@ docker compose up -d
 - 点击保存
 - `URL` 直接用网页展示出来的地址
 
-然后再回到企业微信后台，把下面这 3 个值填进去并保存：
-
-- `URL`
-- `Token`
-- `EncodingAESKey`
+然后再回到企业微信后台，只填 `URL` 并保存。
 
 建议直接用最终域名访问管理界面，再去复制这组配置。
 
@@ -173,6 +180,6 @@ docker compose up -d
 
 ## 说明
 
-- 配置会保存到 `./data/bot-config.json`
+- 配置会保存到 `./data/bot-configs.json`
 - 如果只是第一次上线，优先走单机器人流程
 - 接口说明、回调地址、执行结果都以网页端为准
