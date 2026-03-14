@@ -122,10 +122,14 @@ docker compose up -d
 
 先进入企业微信应用后台的“接收消息服务器配置”页面。
 
-这一步先准备好：
+这一步先随机生成：
 
 - `Token`
 - `EncodingAESKey`
+
+### 企业微信后台页面
+
+<img src="docs/images/readme-wecom-api-receive.png" alt="企业微信接收消息服务器配置页面" width="960" />
 
 ## 4. 回到网页填写，再回企业微信保存
 
