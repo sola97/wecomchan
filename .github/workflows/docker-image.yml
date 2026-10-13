@@ -33,3 +33,5 @@ jobs:
           context: ./go-wecomchan
           push: true
           tags: sola97/wecomchan:latest
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: 'false'
